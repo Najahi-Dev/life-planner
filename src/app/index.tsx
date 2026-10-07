@@ -8,8 +8,7 @@ import {
   ArrowRight,
   LogIn,
   Compass,
-  LogOut,
-  UserCheck,
+  LayoutDashboard,
 } from 'lucide-react-native';
 import { Button, Card, Skeleton } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
@@ -17,7 +16,20 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 
 export default function IndexScreen() {
   const theme = useTheme();
-  const { user, profile, isAuthenticated, isLoading, logout, demoLoginMutation } = useAuth();
+  const { user, profile, isAuthenticated, isLoading, demoLoginMutation } = useAuth();
+
+  const handleEnterDashboard = () => {
+    router.push('/(tabs)' as any);
+  };
+
+  const handleDemoLogin = async () => {
+    try {
+      await demoLoginMutation.mutateAsync();
+      router.push('/(tabs)' as any);
+    } catch {
+      // Handled in mutation
+    }
+  };
 
   if (isLoading) {
     return (
@@ -55,7 +67,7 @@ export default function IndexScreen() {
                 { color: theme.accent.primary },
               ]}
             >
-              Phase 3: Firebase Auth & Session Ready
+              Phase 4: Navigation Shell & Dashboard Active
             </Text>
           </View>
 
@@ -74,38 +86,40 @@ export default function IndexScreen() {
           </Text>
         </View>
 
-        {/* Auth State Card */}
-        {isAuthenticated && user ? (
-          <Card variant="accent" style={{ marginBottom: 16 }}>
-            <View style={styles.userRow}>
-              <View
-                style={[
-                  styles.userAvatar,
-                  { backgroundColor: theme.accent.primary, borderRadius: theme.radius.full },
-                ]}
-              >
-                <UserCheck size={24} color="#FFFFFF" />
-              </View>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[theme.typography.heading, { color: theme.colors.text }]}>
-                  {profile?.displayName || user.displayName || 'Active User'}
-                </Text>
-                <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                  {user.email}
-                </Text>
-              </View>
+        {/* Primary Dashboard Launch Card */}
+        <Card variant="accent" style={{ marginBottom: 16 }}>
+          <View style={styles.userRow}>
+            <View
+              style={[
+                styles.userAvatar,
+                { backgroundColor: theme.accent.primary, borderRadius: theme.radius.full },
+              ]}
+            >
+              <LayoutDashboard size={24} color="#FFFFFF" />
             </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={[theme.typography.heading, { color: theme.colors.text }]}>
+                {isAuthenticated ? (profile?.displayName || user?.displayName || 'Alex Rivers') : 'Life Planner Mobile'}
+              </Text>
+              <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                {isAuthenticated ? user?.email : 'Explore Home Dashboard & 5 Core Tabs'}
+              </Text>
+            </View>
+          </View>
 
-            <Button
-              title="Sign Out Session"
-              onPress={() => logout()}
-              variant="outline"
-              size="secondary"
-              leftIcon={<LogOut size={16} color={theme.accent.primary} />}
-              style={{ marginTop: 14 }}
-            />
-          </Card>
-        ) : (
+          <Button
+            title="Open Planner Dashboard"
+            onPress={handleEnterDashboard}
+            variant="primary"
+            size="primary"
+            leftIcon={<LayoutDashboard size={18} color="#FFFFFF" />}
+            rightIcon={<ArrowRight size={18} color="#FFFFFF" />}
+            style={{ marginTop: 14 }}
+          />
+        </Card>
+
+        {/* Auth / Onboarding Card */}
+        {!isAuthenticated && (
           <Card variant="elevated" style={{ marginBottom: 16 }}>
             <Text style={[theme.typography.heading, { color: theme.colors.text, marginBottom: 8 }]}>
               🔐 Authentication & Onboarding
@@ -121,17 +135,16 @@ export default function IndexScreen() {
 
             <Button
               title="Start Onboarding Walkthrough"
-              onPress={() => router.push('/(auth)/onboarding')}
-              variant="primary"
+              onPress={() => router.push('/(auth)/onboarding' as any)}
+              variant="secondary"
               size="primary"
-              leftIcon={<Compass size={18} color="#FFFFFF" />}
-              rightIcon={<ArrowRight size={18} color="#FFFFFF" />}
+              leftIcon={<Compass size={18} color={theme.colors.text} />}
               style={{ marginBottom: 10 }}
             />
 
             <Button
               title="Sign In with Email"
-              onPress={() => router.push('/(auth)/login')}
+              onPress={() => router.push('/(auth)/login' as any)}
               variant="secondary"
               size="secondary"
               leftIcon={<LogIn size={18} color={theme.colors.text} />}
@@ -140,7 +153,7 @@ export default function IndexScreen() {
 
             <Button
               title="Instant Demo Login (1-Tap)"
-              onPress={() => demoLoginMutation.mutate()}
+              onPress={handleDemoLogin}
               loading={demoLoginMutation.isPending}
               variant="outline"
               size="secondary"
@@ -149,7 +162,7 @@ export default function IndexScreen() {
           </Card>
         )}
 
-        {/* UI Gallery Gateway Card */}
+        {/* UI Component Gallery Card */}
         <Card variant="outlined" style={{ marginBottom: 24 }}>
           <Text style={[theme.typography.heading, { color: theme.colors.text, marginBottom: 8 }]}>
             🎨 UI Component Gallery
@@ -165,7 +178,7 @@ export default function IndexScreen() {
 
           <Button
             title="Open UI Gallery Preview"
-            onPress={() => router.push('/gallery')}
+            onPress={() => router.push('/gallery' as any)}
             variant="secondary"
             size="primary"
             leftIcon={<Palette size={18} color={theme.colors.text} />}
