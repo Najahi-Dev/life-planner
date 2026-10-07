@@ -1,4 +1,13 @@
-import * as Notifications from 'expo-notifications';
+import { setNotificationHandler } from 'expo-notifications/build/NotificationsHandler';
+import { setNotificationChannelAsync } from 'expo-notifications/build/setNotificationChannelAsync';
+import {
+  getPermissionsAsync,
+  requestPermissionsAsync,
+} from 'expo-notifications/build/NotificationPermissions';
+import { scheduleNotificationAsync } from 'expo-notifications/build/scheduleNotificationAsync';
+import { cancelScheduledNotificationAsync } from 'expo-notifications/build/cancelScheduledNotificationAsync';
+import { AndroidImportance } from 'expo-notifications/build/NotificationChannelManager.types';
+import { SchedulableTriggerInputTypes } from 'expo-notifications/build/Notifications.types';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
@@ -6,32 +15,41 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import { NotificationSchedulePayload } from '../types';
 
-// Configure foreground notification behavior for Expo SDK 57
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+const isExpoGo = Constants.appOwnership === 'expo';
+const isWeb = Platform.OS === 'web';
+
+// Configure foreground notification behavior safely
+try {
+  if (!isWeb) {
+    setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+  }
+} catch {
+  // Graceful fallback in Expo Go / web
+}
 
 export const pushNotificationService = {
   /**
-   * Register device and retrieve Expo push token
+   * Register device and retrieve Expo push token (development builds / production only)
    */
   async registerForPushNotificationsAsync(userId?: string): Promise<string | null> {
-    if (Platform.OS === 'web') {
+    if (isWeb || isExpoGo) {
+      // Remote notifications are only supported in Development Builds or standalone builds in Expo SDK 53+
       return null;
     }
 
     try {
-      // Set up Android notification channels
       if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
+        await setNotificationChannelAsync('default', {
           name: 'Life Planner Reminders',
-          importance: Notifications.AndroidImportance.MAX,
+          importance: AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#6366F1',
           sound: 'default',
@@ -42,11 +60,11 @@ export const pushNotificationService = {
         return null;
       }
 
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      const { status: existingStatus } = await getPermissionsAsync();
       let finalStatus = existingStatus;
 
       if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
+        const { status } = await requestPermissionsAsync();
         finalStatus = status;
       }
 
@@ -57,7 +75,10 @@ export const pushNotificationService = {
       const projectId =
         Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 
-      const tokenData = await Notifications.getExpoPushTokenAsync(
+      const { getExpoPushTokenAsync } = await import(
+        'expo-notifications/build/getExpoPushTokenAsync'
+      );
+      const tokenData = await getExpoPushTokenAsync(
         projectId ? { projectId } : undefined,
       );
       const pushToken = tokenData.data;
@@ -88,10 +109,10 @@ export const pushNotificationService = {
    * Schedule a local notification reminder
    */
   async scheduleLocalReminder(payload: NotificationSchedulePayload): Promise<string | null> {
-    if (Platform.OS === 'web') return null;
+    if (isWeb) return null;
 
     try {
-      const id = await Notifications.scheduleNotificationAsync({
+      const id = await scheduleNotificationAsync({
         identifier: payload.id,
         content: {
           title: payload.title,
@@ -103,7 +124,7 @@ export const pushNotificationService = {
           },
         },
         trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          type: SchedulableTriggerInputTypes.DATE,
           date: payload.scheduledDate,
         },
       });
@@ -118,9 +139,9 @@ export const pushNotificationService = {
    * Cancel a scheduled notification by identifier
    */
   async cancelScheduledReminder(notificationId: string): Promise<void> {
-    if (Platform.OS === 'web') return;
+    if (isWeb) return;
     try {
-      await Notifications.cancelScheduledNotificationAsync(notificationId);
+      await cancelScheduledNotificationAsync(notificationId);
     } catch {
       // Non-blocking
     }
@@ -133,12 +154,12 @@ export const pushNotificationService = {
     title = 'Life Planner Alert 🔔',
     body = 'Your scheduled study session starts in 15 minutes!',
   ): Promise<void> {
-    if (Platform.OS === 'web') {
+    if (isWeb) {
       return;
     }
 
     try {
-      await Notifications.scheduleNotificationAsync({
+      await scheduleNotificationAsync({
         content: {
           title,
           body,
@@ -147,11 +168,11 @@ export const pushNotificationService = {
         },
         trigger: {
           seconds: 2,
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          type: SchedulableTriggerInputTypes.TIME_INTERVAL,
         },
       });
     } catch {
-      // Non-blocking
+      // Non-blocking in Expo Go
     }
   },
 };

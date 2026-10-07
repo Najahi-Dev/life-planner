@@ -5,7 +5,7 @@ import {
   orderBy,
   addDoc,
   doc,
-  updateDoc,
+  setDoc,
   deleteDoc,
   writeBatch,
 } from 'firebase/firestore';
@@ -38,12 +38,32 @@ export const notificationService = {
   /**
    * Mark single notification as read
    */
-  async markAsRead(userId: string, notificationId: string): Promise<void> {
+  async markAsRead(
+    userId: string,
+    notificationId: string,
+    notificationData?: InAppNotification,
+  ): Promise<void> {
     const docRef = doc(db, 'users', userId, 'notifications', notificationId);
-    await updateDoc(docRef, {
-      read: true,
-      updatedAt: new Date().toISOString(),
-    });
+    if (notificationData) {
+      await setDoc(
+        docRef,
+        {
+          ...notificationData,
+          read: true,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      );
+    } else {
+      await setDoc(
+        docRef,
+        {
+          read: true,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      );
+    }
   },
 
   /**
@@ -54,7 +74,15 @@ export const notificationService = {
     notifications.forEach((n) => {
       if (!n.read) {
         const docRef = doc(db, 'users', userId, 'notifications', n.id);
-        batch.update(docRef, { read: true, updatedAt: new Date().toISOString() });
+        batch.set(
+          docRef,
+          {
+            ...n,
+            read: true,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true },
+        );
       }
     });
     await batch.commit();

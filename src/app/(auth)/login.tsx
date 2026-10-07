@@ -201,7 +201,7 @@ export default function LoginScreen() {
           {/* Footer Register Link */}
           <View style={styles.footer}>
             <Text style={[theme.typography.body, { color: theme.colors.textSecondary }]}>
-              Don't have an account?{' '}
+              {"Don't have an account? "}
             </Text>
             <Pressable
               onPress={() => {

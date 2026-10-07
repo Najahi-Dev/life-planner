@@ -206,7 +206,7 @@ export default function EventsScreen() {
               <View>
                 <View style={styles.sectionHeader}>
                   <Text style={[theme.typography.heading, { color: theme.colors.text }]}>
-                    Today's Schedule ({todayEvents.length})
+                    {"Today's Schedule"} ({todayEvents.length})
                   </Text>
                 </View>
 

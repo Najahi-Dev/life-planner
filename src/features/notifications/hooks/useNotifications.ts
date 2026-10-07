@@ -28,8 +28,12 @@ export function useNotifications() {
   }, [user?.uid]);
 
   const markAsReadMutation = useMutation({
-    mutationFn: (notificationId: string) =>
-      notificationService.markAsRead(userId, notificationId),
+    mutationFn: (notificationId: string) => {
+      const allNotifs =
+        queryClient.getQueryData<InAppNotification[]>(['notifications', userId]) || [];
+      const notifData = allNotifs.find((n) => n.id === notificationId);
+      return notificationService.markAsRead(userId, notificationId, notifData);
+    },
     onMutate: async (notificationId) => {
       await queryClient.cancelQueries({ queryKey: ['notifications', userId] });
       const prev = queryClient.getQueryData<InAppNotification[]>(['notifications', userId]);

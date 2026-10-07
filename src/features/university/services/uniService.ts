@@ -5,7 +5,7 @@ import {
   orderBy,
   addDoc,
   doc,
-  updateDoc,
+  setDoc,
   deleteDoc,
   getDoc,
 } from 'firebase/firestore';
@@ -178,10 +178,14 @@ export const uniService = {
     updates: Partial<UniCourseFormData>,
   ): Promise<void> {
     const docRef = doc(db, 'users', userId, 'courses', courseId);
-    await updateDoc(docRef, {
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    });
+    await setDoc(
+      docRef,
+      {
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
   },
 
   /**
@@ -247,12 +251,16 @@ export const uniService = {
         ? 'in_progress'
         : 'not_started';
 
-    await updateDoc(docRef, {
-      checklist,
-      progressPercent,
-      status,
-      updatedAt: new Date().toISOString(),
-    });
+    await setDoc(
+      docRef,
+      {
+        checklist,
+        progressPercent,
+        status,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
   },
 
   /**
@@ -271,7 +279,7 @@ export const uniService = {
     if (status === 'submitted' || status === 'graded') {
       updates.progressPercent = 100;
     }
-    await updateDoc(docRef, updates);
+    await setDoc(docRef, updates, { merge: true });
   },
 
   /**
@@ -316,10 +324,14 @@ export const uniService = {
     progressPercent: number,
   ): Promise<void> {
     const docRef = doc(db, 'users', userId, 'exams', examId);
-    await updateDoc(docRef, {
-      revisionProgressPercent: progressPercent,
-      updatedAt: new Date().toISOString(),
-    });
+    await setDoc(
+      docRef,
+      {
+        revisionProgressPercent: progressPercent,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
   },
 
   /**

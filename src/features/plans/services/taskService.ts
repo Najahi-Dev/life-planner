@@ -1,12 +1,11 @@
 import {
   collection,
   query,
-  where,
   getDocs,
   orderBy,
   addDoc,
   doc,
-  updateDoc,
+  setDoc,
   deleteDoc,
   writeBatch,
 } from 'firebase/firestore';
@@ -109,10 +108,14 @@ export const taskService = {
   async updateTask(userId: string, taskId: string, data: Partial<TaskFormData>): Promise<void> {
     const now = new Date().toISOString();
     const docRef = doc(db, 'users', userId, 'tasks', taskId);
-    await updateDoc(docRef, {
-      ...data,
-      updatedAt: now,
-    });
+    await setDoc(
+      docRef,
+      {
+        ...data,
+        updatedAt: now,
+      },
+      { merge: true },
+    );
   },
 
   /**
@@ -126,15 +129,37 @@ export const taskService = {
   /**
    * Toggle task completed status
    */
-  async toggleTaskStatus(userId: string, taskId: string, currentStatus: string): Promise<void> {
+  async toggleTaskStatus(
+    userId: string,
+    taskId: string,
+    currentStatus: string,
+    taskData?: TaskItem,
+  ): Promise<void> {
     const nextStatus = currentStatus === 'completed' ? 'pending' : 'completed';
     const now = new Date().toISOString();
     const docRef = doc(db, 'users', userId, 'tasks', taskId);
-    await updateDoc(docRef, {
-      status: nextStatus,
-      completedAt: nextStatus === 'completed' ? now : null,
-      updatedAt: now,
-    });
+    if (taskData) {
+      await setDoc(
+        docRef,
+        {
+          ...taskData,
+          status: nextStatus,
+          completedAt: nextStatus === 'completed' ? now : null,
+          updatedAt: now,
+        },
+        { merge: true },
+      );
+    } else {
+      await setDoc(
+        docRef,
+        {
+          status: nextStatus,
+          completedAt: nextStatus === 'completed' ? now : null,
+          updatedAt: now,
+        },
+        { merge: true },
+      );
+    }
   },
 
   /**

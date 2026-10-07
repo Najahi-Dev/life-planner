@@ -5,7 +5,7 @@ import {
   orderBy,
   addDoc,
   doc,
-  updateDoc,
+  setDoc,
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
@@ -66,10 +66,14 @@ export const shiftService = {
   async updateShift(userId: string, shiftId: string, data: Partial<ShiftFormData>): Promise<void> {
     const now = new Date().toISOString();
     const docRef = doc(db, 'users', userId, 'shifts', shiftId);
-    await updateDoc(docRef, {
-      ...data,
-      updatedAt: now,
-    });
+    await setDoc(
+      docRef,
+      {
+        ...data,
+        updatedAt: now,
+      },
+      { merge: true },
+    );
   },
 
   /**

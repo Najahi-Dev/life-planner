@@ -7,7 +7,7 @@ import {
   limit,
   addDoc,
   doc,
-  updateDoc,
+  setDoc,
 } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 import {
@@ -187,11 +187,15 @@ export const dashboardService = {
     const now = new Date().toISOString();
     try {
       const taskRef = doc(db, 'users', userId, 'tasks', taskId);
-      await updateDoc(taskRef, {
-        status: newStatus,
-        completedAt: newStatus === 'completed' ? now : null,
-        updatedAt: now,
-      });
+      await setDoc(
+        taskRef,
+        {
+          status: newStatus,
+          completedAt: newStatus === 'completed' ? now : null,
+          updatedAt: now,
+        },
+        { merge: true },
+      );
     } catch {
       // Local fallback
     }

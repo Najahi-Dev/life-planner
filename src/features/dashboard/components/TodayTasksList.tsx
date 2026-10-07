@@ -23,7 +23,7 @@ export const TodayTasksList: React.FC<TodayTasksListProps> = ({
       <View style={styles.headerRow}>
         <View>
           <Text style={[theme.typography.heading, { color: theme.colors.text }]}>
-            Today's Priority Tasks
+            {"Today's Priority Tasks"}
           </Text>
           <Text style={[theme.typography.caption, { color: theme.colors.textSecondary, marginTop: 2 }]}>
             {tasks.filter((t) => t.status === 'completed').length} of {tasks.length} completed

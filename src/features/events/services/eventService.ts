@@ -5,7 +5,7 @@ import {
   orderBy,
   addDoc,
   doc,
-  updateDoc,
+  setDoc,
   deleteDoc,
 } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
@@ -99,10 +99,14 @@ export const eventService = {
     data: Partial<EventFormData>,
   ): Promise<void> {
     const docRef = doc(db, 'users', userId, 'events', eventId);
-    await updateDoc(docRef, {
-      ...data,
-      updatedAt: new Date().toISOString(),
-    });
+    await setDoc(
+      docRef,
+      {
+        ...data,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true },
+    );
   },
 
   /**
