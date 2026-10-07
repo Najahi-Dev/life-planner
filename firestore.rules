@@ -78,6 +78,11 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // In-app Notifications
+      match /notifications/{notificationId} {
+        allow read, write: if isOwner(userId);
+      }
+
       // Devices (FCM push tokens)
       match /devices/{deviceId} {
         allow read, write: if isOwner(userId);

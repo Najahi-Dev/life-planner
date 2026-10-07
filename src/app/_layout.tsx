@@ -92,6 +92,10 @@ export default function RootLayout() {
               <Stack.Screen name="(auth)" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen
+                name="events/index"
+                options={{ headerShown: false, animation: 'slide_from_right' }}
+              />
+              <Stack.Screen
                 name="notifications/index"
                 options={{ headerShown: false, animation: 'slide_from_right' }}
               />

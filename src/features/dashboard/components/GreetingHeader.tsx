@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
-import { Bell, Settings } from 'lucide-react-native';
+import { Bell, Settings, Calendar } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -37,12 +37,30 @@ export const GreetingHeader: React.FC = () => {
         <Pressable
           onPress={() => {
             hapticFeedback.light();
-            router.push('/notifications' as any);
+            router.push('/events' as any);
           }}
           hitSlop={8}
           style={[
             styles.actionButton,
             { backgroundColor: theme.colors.surfaceSubtle, borderRadius: theme.radius.button },
+          ]}
+        >
+          <Calendar size={20} color={theme.colors.text} />
+        </Pressable>
+
+        <Pressable
+          onPress={() => {
+            hapticFeedback.light();
+            router.push('/notifications' as any);
+          }}
+          hitSlop={8}
+          style={[
+            styles.actionButton,
+            {
+              backgroundColor: theme.colors.surfaceSubtle,
+              borderRadius: theme.radius.button,
+              marginLeft: 8,
+            },
           ]}
         >
           <Bell size={20} color={theme.colors.text} />
