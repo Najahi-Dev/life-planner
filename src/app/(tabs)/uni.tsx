@@ -25,7 +25,6 @@ import {
   Skeleton,
   SkeletonList,
   EmptyState,
-  Button,
   ConfettiCelebration,
   Chip,
 } from '@/components/ui';
@@ -76,28 +75,41 @@ export default function UniTabScreen() {
   const addExamSheetRef = useRef<BottomSheet>(null);
 
   const handleOpenAddCourse = () => {
+    console.log('[Tap] Uni screen handleOpenAddCourse clicked');
     hapticFeedback.selection();
     addCourseSheetRef.current?.expand();
   };
 
   const handleOpenAddAssignment = () => {
+    console.log('[Tap] Uni screen handleOpenAddAssignment clicked');
     hapticFeedback.selection();
     addAssignmentSheetRef.current?.expand();
   };
 
   const handleOpenAddExam = () => {
+    console.log('[Tap] Uni screen handleOpenAddExam clicked');
     hapticFeedback.selection();
     addExamSheetRef.current?.expand();
   };
 
   const handleAssignmentSubmit = async (assignmentId: string, status: any) => {
-    await updateAssignmentStatus({ assignmentId, status });
-    setCelebrationMsg('Assignment Submitted! Great work! 🎉');
-    setCelebrationVisible(true);
+    console.log('[Tap] Uni screen handleAssignmentSubmit:', assignmentId);
+    try {
+      await updateAssignmentStatus({ assignmentId, status });
+      setCelebrationMsg('Assignment Submitted! Great work! 🎉');
+      setCelebrationVisible(true);
+    } catch (err: any) {
+      console.error('[Uni] Error submitting assignment:', err);
+    }
   };
 
   const handleToggleChecklist = async (assignmentId: string, itemId: string) => {
-    await toggleChecklistItem({ assignmentId, itemId });
+    console.log('[Tap] Uni screen handleToggleChecklist:', assignmentId, itemId);
+    try {
+      await toggleChecklistItem({ assignmentId, itemId });
+    } catch (err: any) {
+      console.error('[Uni] Error toggling checklist:', err);
+    }
   };
 
   // Filter assignments & exams by selected course
@@ -218,10 +230,20 @@ export default function UniTabScreen() {
                         Upcoming Exams
                       </Text>
                     </View>
-                    <Pressable onPress={handleOpenAddExam} hitSlop={6}>
-                      <Text style={[theme.typography.captionBold, { color: theme.accent.primary }]}>
-                        + Add Exam
-                      </Text>
+                    <Pressable
+                      onPress={handleOpenAddExam}
+                      hitSlop={8}
+                      accessibilityLabel="Add Exam"
+                      style={({ pressed }) => [
+                        styles.addButton,
+                        {
+                          backgroundColor: theme.accent.primarySoft,
+                          borderRadius: theme.radius.button,
+                        },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                    >
+                      <Plus size={18} color={theme.accent.primary} />
                     </Pressable>
                   </View>
                 )}
@@ -243,10 +265,20 @@ export default function UniTabScreen() {
                       Active Course Assignments
                     </Text>
                   </View>
-                  <Pressable onPress={handleOpenAddAssignment} hitSlop={6}>
-                    <Text style={[theme.typography.captionBold, { color: theme.accent.primary }]}>
-                      + New
-                    </Text>
+                  <Pressable
+                    onPress={handleOpenAddAssignment}
+                    hitSlop={8}
+                    accessibilityLabel="Add Assignment"
+                    style={({ pressed }) => [
+                      styles.addButton,
+                      {
+                        backgroundColor: theme.accent.primarySoft,
+                        borderRadius: theme.radius.button,
+                      },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Plus size={18} color={theme.accent.primary} />
                   </Pressable>
                 </View>
 
@@ -278,10 +310,20 @@ export default function UniTabScreen() {
                       Enrolled Courses ({courses.length})
                     </Text>
                   </View>
-                  <Pressable onPress={handleOpenAddCourse} hitSlop={6}>
-                    <Text style={[theme.typography.captionBold, { color: theme.accent.primary }]}>
-                      + Enroll
-                    </Text>
+                  <Pressable
+                    onPress={handleOpenAddCourse}
+                    hitSlop={8}
+                    accessibilityLabel="Enroll Course"
+                    style={({ pressed }) => [
+                      styles.addButton,
+                      {
+                        backgroundColor: theme.accent.primarySoft,
+                        borderRadius: theme.radius.button,
+                      },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Plus size={18} color={theme.accent.primary} />
                   </Pressable>
                 </View>
 
@@ -302,14 +344,21 @@ export default function UniTabScreen() {
                   <Text style={[theme.typography.captionBold, { color: theme.colors.textSecondary }]}>
                     {filteredAssignments.length} Assignments Found
                   </Text>
-                  <Button
-                    title="New Assignment"
+                  <Pressable
                     onPress={handleOpenAddAssignment}
-                    variant="primary"
-                    size="sm"
-                    fullWidth={false}
-                    leftIcon={<Plus size={15} color="#FFFFFF" />}
-                  />
+                    hitSlop={8}
+                    accessibilityLabel="New Assignment"
+                    style={({ pressed }) => [
+                      styles.addButton,
+                      {
+                        backgroundColor: theme.accent.primarySoft,
+                        borderRadius: theme.radius.button,
+                      },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Plus size={18} color={theme.accent.primary} />
+                  </Pressable>
                 </View>
 
                 {filteredAssignments.length > 0 ? (
@@ -341,14 +390,21 @@ export default function UniTabScreen() {
                   <Text style={[theme.typography.captionBold, { color: theme.colors.textSecondary }]}>
                     {filteredExams.length} Scheduled Exams
                   </Text>
-                  <Button
-                    title="Schedule Exam"
+                  <Pressable
                     onPress={handleOpenAddExam}
-                    variant="primary"
-                    size="sm"
-                    fullWidth={false}
-                    leftIcon={<Plus size={15} color="#FFFFFF" />}
-                  />
+                    hitSlop={8}
+                    accessibilityLabel="Schedule Exam"
+                    style={({ pressed }) => [
+                      styles.addButton,
+                      {
+                        backgroundColor: theme.accent.primarySoft,
+                        borderRadius: theme.radius.button,
+                      },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Plus size={18} color={theme.accent.primary} />
+                  </Pressable>
                 </View>
 
                 {filteredExams.length > 0 ? (
@@ -379,14 +435,21 @@ export default function UniTabScreen() {
                   <Text style={[theme.typography.captionBold, { color: theme.colors.textSecondary }]}>
                     {courses.length} Active Courses
                   </Text>
-                  <Button
-                    title="Enroll Course"
+                  <Pressable
                     onPress={handleOpenAddCourse}
-                    variant="primary"
-                    size="sm"
-                    fullWidth={false}
-                    leftIcon={<Plus size={15} color="#FFFFFF" />}
-                  />
+                    hitSlop={8}
+                    accessibilityLabel="Enroll Course"
+                    style={({ pressed }) => [
+                      styles.addButton,
+                      {
+                        backgroundColor: theme.accent.primarySoft,
+                        borderRadius: theme.radius.button,
+                      },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <Plus size={18} color={theme.accent.primary} />
+                  </Pressable>
                 </View>
 
                 {courses.length > 0 ? (
@@ -504,5 +567,11 @@ const styles = StyleSheet.create({
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  addButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

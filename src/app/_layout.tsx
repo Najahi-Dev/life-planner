@@ -77,7 +77,7 @@ export default function RootLayout() {
     <GestureHandlerRootView
       style={[styles.root, { backgroundColor: theme.colors.background }]}
     >
-      <SafeAreaProvider>
+      <SafeAreaProvider style={styles.root}>
         <QueryClientProvider client={queryClient}>
           <BottomSheetModalProvider>
             <StatusBar style={theme.isDark ? 'light' : 'dark'} />

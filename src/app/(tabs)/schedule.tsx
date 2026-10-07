@@ -4,6 +4,7 @@ import {
   View,
   ScrollView,
   RefreshControl,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -12,7 +13,6 @@ import {
   Header,
   SegmentedControl,
   SkeletonList,
-  Button,
   ConfettiCelebration,
 } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
@@ -45,6 +45,7 @@ export default function ScheduleTabScreen() {
   const [celebrationMsg, setCelebrationMsg] = useState('');
 
   const handleOpenCreate = () => {
+    console.log('[Tap] Schedule screen handleOpenCreate clicked');
     createSheetRef.current?.expand();
   };
 
@@ -60,14 +61,20 @@ export default function ScheduleTabScreen() {
         title="Work Schedule"
         subtitle="Shifts, Hours & Earnings"
         rightAction={
-          <Button
-            title="New"
+          <Pressable
             onPress={handleOpenCreate}
-            variant="primary"
-            size="sm"
-            leftIcon={<Plus size={16} color="#FFFFFF" />}
-            fullWidth={false}
-          />
+            hitSlop={8}
+            accessibilityLabel="New Shift"
+            style={[
+              styles.headerIconBtn,
+              {
+                backgroundColor: theme.colors.surfaceSubtle,
+                borderRadius: theme.radius.button,
+              },
+            ]}
+          >
+            <Plus size={22} color={theme.accent.primary} />
+          </Pressable>
         }
       />
 
@@ -142,6 +149,12 @@ export default function ScheduleTabScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  headerIconBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollContent: {
     paddingTop: 4,

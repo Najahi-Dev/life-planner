@@ -1,12 +1,12 @@
 import React, { useState, forwardRef } from 'react';
-import { StyleSheet, View, Text, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, Alert } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { Calendar, Plus } from 'lucide-react-native';
+import { Calendar } from 'lucide-react-native';
 import { Sheet, Button, Input, DateTimeField, Chip } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { EventType } from '@/types';
 import { hapticFeedback } from '@/utils/haptics';
-import { EventFormData } from '../schemas/eventSchemas';
+import { EventFormData, eventSchema } from '../schemas/eventSchemas';
 import { EVENT_TYPE_COLORS } from '../types';
 import { format } from 'date-fns';
 
@@ -30,6 +30,7 @@ export const AddEventSheet = forwardRef<BottomSheet, AddEventSheetProps>(
     const [reminderMinutes, setReminderMinutes] = useState<number>(30);
     const [notes, setNotes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const eventTypes: EventType[] = [
       'academic',
@@ -48,7 +49,31 @@ export const AddEventSheet = forwardRef<BottomSheet, AddEventSheetProps>(
     ];
 
     const handleSave = async () => {
-      if (!title.trim()) {
+      console.log('[Tap] AddEvent submit clicked');
+      setErrors({});
+
+      const dateStr = format(eventDate, 'yyyy-MM-dd');
+      const startStr = format(startTime, 'HH:mm');
+      const endStr = format(endTime, 'HH:mm');
+
+      const validation = eventSchema.safeParse({
+        title: title.trim(),
+        type,
+        date: dateStr,
+        startTime: startStr,
+        endTime: endStr,
+        location: location.trim(),
+        reminderMinutesBefore: reminderMinutes,
+        notes: notes.trim(),
+        color: EVENT_TYPE_COLORS[type]?.color,
+      });
+
+      if (!validation.success) {
+        const fieldErrors: Record<string, string> = {};
+        validation.error.issues.forEach((e: any) => {
+          if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+        });
+        setErrors(fieldErrors);
         hapticFeedback.warning();
         return;
       }
@@ -58,9 +83,9 @@ export const AddEventSheet = forwardRef<BottomSheet, AddEventSheetProps>(
         await onSave({
           title: title.trim(),
           type,
-          date: format(eventDate, 'yyyy-MM-dd'),
-          startTime: format(startTime, 'HH:mm'),
-          endTime: format(endTime, 'HH:mm'),
+          date: dateStr,
+          startTime: startStr,
+          endTime: endStr,
           location: location.trim(),
           reminderMinutesBefore: reminderMinutes,
           notes: notes.trim(),
@@ -74,8 +99,11 @@ export const AddEventSheet = forwardRef<BottomSheet, AddEventSheetProps>(
         setTitle('');
         setLocation('');
         setNotes('');
-      } catch {
+        setErrors({});
+      } catch (err: any) {
+        console.error('[AddEvent] Error saving event:', err);
         hapticFeedback.error();
+        Alert.alert('Error', err?.message || 'Failed to save event');
       } finally {
         setIsSubmitting(false);
       }
@@ -101,7 +129,11 @@ export const AddEventSheet = forwardRef<BottomSheet, AddEventSheetProps>(
             label="Event Name"
             placeholder="e.g. Career Fair & Networking"
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(t) => {
+              setTitle(t);
+              if (errors.title) setErrors((prev) => ({ ...prev, title: '' }));
+            }}
+            error={errors.title}
             required
           />
 
@@ -124,15 +156,33 @@ export const AddEventSheet = forwardRef<BottomSheet, AddEventSheetProps>(
           </View>
 
           {/* Date Picker */}
-          <DateTimeField label="Event Date" mode="date" value={eventDate} onChange={setEventDate} />
+          <DateTimeField
+            label="Event Date"
+            mode="date"
+            value={eventDate}
+            onChange={setEventDate}
+            error={errors.date}
+          />
 
           {/* Times */}
           <View style={styles.timeRow}>
             <View style={{ flex: 1, marginRight: 8 }}>
-              <DateTimeField label="Start Time" mode="time" value={startTime} onChange={setStartTime} />
+              <DateTimeField
+                label="Start Time"
+                mode="time"
+                value={startTime}
+                onChange={setStartTime}
+                error={errors.startTime}
+              />
             </View>
             <View style={{ flex: 1, marginLeft: 8 }}>
-              <DateTimeField label="End Time" mode="time" value={endTime} onChange={setEndTime} />
+              <DateTimeField
+                label="End Time"
+                mode="time"
+                value={endTime}
+                onChange={setEndTime}
+                error={errors.endTime}
+              />
             </View>
           </View>
 
@@ -141,7 +191,11 @@ export const AddEventSheet = forwardRef<BottomSheet, AddEventSheetProps>(
             label="Location / Venue (Optional)"
             placeholder="e.g. Student Center Room 101 or Zoom link"
             value={location}
-            onChangeText={setLocation}
+            onChangeText={(l) => {
+              setLocation(l);
+              if (errors.location) setErrors((prev) => ({ ...prev, location: '' }));
+            }}
+            error={errors.location}
           />
 
           {/* Reminder lead time */}

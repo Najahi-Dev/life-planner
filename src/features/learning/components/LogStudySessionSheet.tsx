@@ -1,5 +1,5 @@
 import React, { useState, forwardRef } from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import { StyleSheet, View, Text, Pressable, Alert } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BookOpen, Star } from 'lucide-react-native';
 import { Sheet, Button, Input, Select, DateTimeField, Chip, SelectOption } from '@/components/ui';
@@ -7,6 +7,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { LearningTopic } from '@/types';
 import { hapticFeedback } from '@/utils/haptics';
 import { format } from 'date-fns';
+import { studySessionSchema } from '../schemas/learningSchemas';
 
 export interface LogStudySessionSheetProps {
   topics: LearningTopic[];
@@ -30,12 +31,36 @@ export const LogStudySessionSheet = forwardRef<BottomSheet, LogStudySessionSheet
     const [date, setDate] = useState<Date>(new Date());
     const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5>(4);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const presetDurations = [15, 30, 45, 60, 90, 120];
 
     const handleSave = async () => {
+      console.log('[Tap] LogStudySession submit clicked');
+      setErrors({});
+
       const topic = topics.find((t) => t.id === selectedTopicId) || topics[0];
       if (!topic) {
+        setErrors({ topic: 'Please select or create a learning topic first' });
+        hapticFeedback.warning();
+        Alert.alert('No Topic Selected', 'Please select or create a learning topic before logging a session.');
+        return;
+      }
+
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const parsed = studySessionSchema.safeParse({
+        topicId: topic.id,
+        durationMinutes: Number(durationMinutes) || 30,
+        notes: notes.trim(),
+        date: dateStr,
+      });
+
+      if (!parsed.success) {
+        const fieldErrors: Record<string, string> = {};
+        parsed.error.issues.forEach((e: any) => {
+          if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+        });
+        setErrors(fieldErrors);
         hapticFeedback.warning();
         return;
       }
@@ -47,7 +72,7 @@ export const LogStudySessionSheet = forwardRef<BottomSheet, LogStudySessionSheet
           topicTitle: topic.title,
           durationMinutes: Number(durationMinutes) || 30,
           notes: notes.trim(),
-          date: format(date, 'yyyy-MM-dd'),
+          date: dateStr,
           rating,
         });
         hapticFeedback.success();
@@ -56,8 +81,11 @@ export const LogStudySessionSheet = forwardRef<BottomSheet, LogStudySessionSheet
         // Reset form
         setNotes('');
         setDurationMinutes(45);
-      } catch {
+        setErrors({});
+      } catch (err: any) {
+        console.error('[LogStudySession] Error saving session:', err);
         hapticFeedback.error();
+        Alert.alert('Error', err?.message || 'Failed to log study session');
       } finally {
         setIsSubmitting(false);
       }
@@ -91,8 +119,10 @@ export const LogStudySessionSheet = forwardRef<BottomSheet, LogStudySessionSheet
             value={selectedTopicId || topics[0]?.id}
             onChange={(item) => {
               setSelectedTopicId(item.value);
+              if (errors.topic) setErrors((prev) => ({ ...prev, topic: '' }));
               hapticFeedback.selection();
             }}
+            error={errors.topic}
             placeholder="Select topic..."
           />
 

@@ -32,7 +32,10 @@ export const TodayTasksList: React.FC<TodayTasksListProps> = ({
 
         {onAddTask && (
           <Pressable
-            onPress={onAddTask}
+            onPress={() => {
+              console.log('[Tap] TodayTasksList onAddTask clicked');
+              onAddTask();
+            }}
             hitSlop={8}
             style={[
               styles.addButton,
@@ -61,7 +64,10 @@ export const TodayTasksList: React.FC<TodayTasksListProps> = ({
             >
               {/* Checkbox */}
               <Pressable
-                onPress={() => onToggleTask(task.id, task.status)}
+                onPress={() => {
+                  console.log('[Tap] TodayTasksList toggle task:', task.id, 'status:', task.status);
+                  onToggleTask(task.id, task.status);
+                }}
                 hitSlop={8}
                 style={[
                   styles.checkbox,

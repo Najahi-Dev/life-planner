@@ -78,6 +78,7 @@ export function SegmentedControl<T = string>({
     >
       {itemWidth > 0 && (
         <Animated.View
+          pointerEvents="none"
           style={[
             styles.indicator,
             {

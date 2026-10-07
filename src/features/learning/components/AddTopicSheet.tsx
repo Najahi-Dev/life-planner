@@ -1,11 +1,11 @@
 import React, { useState, forwardRef } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, Alert } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { BookOpen, Plus, Tag, Target } from 'lucide-react-native';
 import { Sheet, Button, Input, Chip } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { hapticFeedback } from '@/utils/haptics';
-import { LearningTopicFormData } from '../schemas/learningSchemas';
+import { LearningTopicFormData, learningTopicSchema } from '../schemas/learningSchemas';
 
 export interface AddTopicSheetProps {
   onSave: (data: LearningTopicFormData) => Promise<void>;
@@ -20,6 +20,7 @@ export const AddTopicSheet = forwardRef<BottomSheet, AddTopicSheetProps>(
     const [targetHours, setTargetHours] = useState('20');
     const [resourceTitle, setResourceTitle] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const categories = [
       'Computer Science',
@@ -32,23 +33,39 @@ export const AddTopicSheet = forwardRef<BottomSheet, AddTopicSheetProps>(
     ];
 
     const handleSave = async () => {
-      if (!title.trim()) {
+      console.log('[Tap] AddTopic submit clicked');
+      setErrors({});
+
+      const resources = resourceTitle.trim()
+        ? [
+            {
+              id: `res-${Date.now()}`,
+              title: resourceTitle.trim(),
+              type: 'article' as const,
+            },
+          ]
+        : [];
+
+      const parsed = learningTopicSchema.safeParse({
+        title: title.trim(),
+        category: category.trim(),
+        targetHours: Number(targetHours) || 15,
+        completedHours: 0,
+        resources,
+      });
+
+      if (!parsed.success) {
+        const fieldErrors: Record<string, string> = {};
+        parsed.error.issues.forEach((e: any) => {
+          if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+        });
+        setErrors(fieldErrors);
         hapticFeedback.warning();
         return;
       }
 
       setIsSubmitting(true);
       try {
-        const resources = resourceTitle.trim()
-          ? [
-              {
-                id: `res-${Date.now()}`,
-                title: resourceTitle.trim(),
-                type: 'article' as const,
-              },
-            ]
-          : [];
-
         await onSave({
           title: title.trim(),
           category: category.trim(),
@@ -64,8 +81,11 @@ export const AddTopicSheet = forwardRef<BottomSheet, AddTopicSheetProps>(
         setTitle('');
         setResourceTitle('');
         setTargetHours('20');
-      } catch {
+        setErrors({});
+      } catch (err: any) {
+        console.error('[AddTopic] Error creating topic:', err);
         hapticFeedback.error();
+        Alert.alert('Error', err?.message || 'Failed to save topic');
       } finally {
         setIsSubmitting(false);
       }
@@ -91,7 +111,11 @@ export const AddTopicSheet = forwardRef<BottomSheet, AddTopicSheetProps>(
             label="Topic Title"
             placeholder="e.g. Kotlin Coroutines & Flow"
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(t) => {
+              setTitle(t);
+              if (errors.title) setErrors((prev) => ({ ...prev, title: '' }));
+            }}
+            error={errors.title}
             required
           />
 
@@ -125,7 +149,11 @@ export const AddTopicSheet = forwardRef<BottomSheet, AddTopicSheetProps>(
             placeholder="20"
             keyboardType="numeric"
             value={targetHours}
-            onChangeText={setTargetHours}
+            onChangeText={(th) => {
+              setTargetHours(th);
+              if (errors.targetHours) setErrors((prev) => ({ ...prev, targetHours: '' }));
+            }}
+            error={errors.targetHours}
             required
           />
 

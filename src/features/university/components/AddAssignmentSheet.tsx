@@ -1,12 +1,12 @@
 import React, { useState, forwardRef } from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import { StyleSheet, View, Text, Pressable, Alert } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { CheckSquare, Plus, Trash2 } from 'lucide-react-native';
 import { Sheet, Button, Input, Select, DateTimeField, Chip, SelectOption } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { UniCourse } from '@/types';
 import { hapticFeedback } from '@/utils/haptics';
-import { UniAssignmentFormData } from '../schemas/uniSchemas';
+import { UniAssignmentFormData, uniAssignmentSchema } from '../schemas/uniSchemas';
 import { format } from 'date-fns';
 
 export interface AddAssignmentSheetProps {
@@ -27,6 +27,7 @@ export const AddAssignmentSheet = forwardRef<BottomSheet, AddAssignmentSheetProp
     const [newStepText, setNewStepText] = useState('');
     const [checklistItems, setChecklistItems] = useState<{ id: string; title: string; completed: boolean }[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const weights = [5, 10, 15, 20, 25, 30];
 
@@ -46,12 +47,33 @@ export const AddAssignmentSheet = forwardRef<BottomSheet, AddAssignmentSheetProp
     };
 
     const handleSave = async () => {
-      if (!title.trim()) {
+      console.log('[Tap] AddAssignment submit clicked');
+      setErrors({});
+
+      const activeCourse = courses.find((c) => c.id === selectedCourseId) || courses[0];
+      const dueDateStr = format(dueDate, 'yyyy-MM-dd');
+      const dueTimeStr = format(dueTime, 'HH:mm');
+
+      const parsed = uniAssignmentSchema.safeParse({
+        courseId: activeCourse?.id || 'c1',
+        courseCode: activeCourse?.code || 'CS301',
+        title: title.trim(),
+        dueDate: dueDateStr,
+        dueTime: dueTimeStr,
+        weightPercent: Number(weightPercent) || 15,
+        notes: notes.trim(),
+        checklist: checklistItems,
+      });
+
+      if (!parsed.success) {
+        const fieldErrors: Record<string, string> = {};
+        parsed.error.issues.forEach((e: any) => {
+          if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+        });
+        setErrors(fieldErrors);
         hapticFeedback.warning();
         return;
       }
-
-      const activeCourse = courses.find((c) => c.id === selectedCourseId) || courses[0];
 
       setIsSubmitting(true);
       try {
@@ -59,8 +81,8 @@ export const AddAssignmentSheet = forwardRef<BottomSheet, AddAssignmentSheetProp
           courseId: activeCourse?.id || 'c1',
           courseCode: activeCourse?.code || 'CS301',
           title: title.trim(),
-          dueDate: format(dueDate, 'yyyy-MM-dd'),
-          dueTime: format(dueTime, 'HH:mm'),
+          dueDate: dueDateStr,
+          dueTime: dueTimeStr,
           weightPercent: Number(weightPercent) || 15,
           notes: notes.trim(),
           checklist: checklistItems,
@@ -73,8 +95,11 @@ export const AddAssignmentSheet = forwardRef<BottomSheet, AddAssignmentSheetProp
         setTitle('');
         setNotes('');
         setChecklistItems([]);
-      } catch {
+        setErrors({});
+      } catch (err: any) {
+        console.error('[AddAssignment] Error creating assignment:', err);
         hapticFeedback.error();
+        Alert.alert('Error', err?.message || 'Failed to save assignment');
       } finally {
         setIsSubmitting(false);
       }
@@ -115,7 +140,11 @@ export const AddAssignmentSheet = forwardRef<BottomSheet, AddAssignmentSheetProp
             label="Assignment Title"
             placeholder="e.g. Dijkstra Algorithm Project"
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(t) => {
+              setTitle(t);
+              if (errors.title) setErrors((prev) => ({ ...prev, title: '' }));
+            }}
+            error={errors.title}
             required
           />
 

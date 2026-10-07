@@ -16,7 +16,7 @@ export const firebaseConfig = {
   storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || 'lifeplanner-app-prod.appspot.com',
   messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '102938475610',
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || '1:102938475610:web:abcdef1234567890',
-  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID || 'G-ABCDEF1234',
+  ...(process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID ? { measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID } : {}),
 };
 
 // Check if actual valid Firebase credentials are provided
@@ -56,7 +56,7 @@ try {
 
 export const auth = authInstance;
 
-// Initialize Firestore with platform-appropriate cache (IndexedDB for Web, Memory cache for React Native)
+// Initialize Firestore with platform-appropriate cache and robust connection handling
 export const db = initializeFirestore(app, {
   localCache:
     Platform.OS === 'web'
@@ -64,4 +64,5 @@ export const db = initializeFirestore(app, {
           tabManager: persistentMultipleTabManager(),
         })
       : memoryLocalCache(),
+  experimentalAutoDetectLongPolling: true,
 });

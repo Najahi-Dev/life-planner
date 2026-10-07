@@ -34,6 +34,13 @@ import { format } from 'date-fns';
 import { Priority, TaskCategory, TaskRepeat, EventType } from '@/types';
 import { hapticFeedback } from '@/utils/haptics';
 
+import { Alert } from 'react-native';
+import { taskSchema } from '@/features/plans/schemas/taskSchemas';
+import { shiftSchema } from '@/features/schedule/schemas/shiftSchemas';
+import { uniAssignmentSchema, uniExamSchema } from '@/features/university/schemas/uniSchemas';
+import { eventSchema } from '@/features/events/schemas/eventSchemas';
+import { studySessionSchema } from '@/features/learning/schemas/learningSchemas';
+
 export type CreateType = 'task' | 'shift' | 'assignment' | 'exam' | 'study' | 'event';
 
 export interface QuickCreateSheetProps {
@@ -48,6 +55,7 @@ export const QuickCreateSheet = forwardRef<BottomSheet, QuickCreateSheetProps>(
 
     const [selectedType, setSelectedType] = useState<CreateType>('task');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Form states
     const [title, setTitle] = useState('');
@@ -65,16 +73,134 @@ export const QuickCreateSheet = forwardRef<BottomSheet, QuickCreateSheetProps>(
     const [eventType, setEventType] = useState<EventType>('academic');
 
     const handleCreate = async () => {
-      if (!title.trim()) {
-        hapticFeedback.warning();
-        return;
-      }
+      console.log('[Tap] QuickCreate submit clicked:', selectedType);
+      setErrors({});
 
       const userId = user?.uid || 'guest-user';
       const now = new Date().toISOString();
       const dateStr = format(date, 'yyyy-MM-dd');
       const startTimeStr = format(startTime, 'HH:mm');
       const endTimeStr = format(endTime, 'HH:mm');
+
+      // 1. ZOD VALIDATION PER TYPE
+      try {
+        if (selectedType === 'task') {
+          const parsed = taskSchema.safeParse({
+            title: title.trim(),
+            notes: notes.trim(),
+            priority,
+            category,
+            dueDate: dateStr,
+            dueTime: startTimeStr,
+            repeat,
+          });
+          if (!parsed.success) {
+            const fieldErrors: Record<string, string> = {};
+            parsed.error.issues.forEach((e: any) => {
+              if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+            });
+            setErrors(fieldErrors);
+            hapticFeedback.warning();
+            return;
+          }
+        } else if (selectedType === 'shift') {
+          const parsed = shiftSchema.safeParse({
+            title: title.trim(),
+            companyOrRole: notes.trim() || 'Work Shift',
+            date: dateStr,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            location: location.trim(),
+            hourlyRate: parseFloat(hourlyRate) || 25,
+            notes: notes.trim(),
+          });
+          if (!parsed.success) {
+            const fieldErrors: Record<string, string> = {};
+            parsed.error.issues.forEach((e: any) => {
+              if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+            });
+            setErrors(fieldErrors);
+            hapticFeedback.warning();
+            return;
+          }
+        } else if (selectedType === 'assignment') {
+          const parsed = uniAssignmentSchema.safeParse({
+            title: title.trim(),
+            courseCode: courseCode.trim().toUpperCase(),
+            courseId: 'course-1',
+            dueDate: dateStr,
+            dueTime: startTimeStr,
+            notes: notes.trim(),
+          });
+          if (!parsed.success) {
+            const fieldErrors: Record<string, string> = {};
+            parsed.error.issues.forEach((e: any) => {
+              if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+            });
+            setErrors(fieldErrors);
+            hapticFeedback.warning();
+            return;
+          }
+        } else if (selectedType === 'exam') {
+          const parsed = uniExamSchema.safeParse({
+            title: title.trim(),
+            courseCode: courseCode.trim().toUpperCase(),
+            courseId: 'course-1',
+            date: dateStr,
+            time: startTimeStr,
+            venue: location.trim() || 'Main Hall 101',
+            notes: notes.trim(),
+          });
+          if (!parsed.success) {
+            const fieldErrors: Record<string, string> = {};
+            parsed.error.issues.forEach((e: any) => {
+              if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+            });
+            setErrors(fieldErrors);
+            hapticFeedback.warning();
+            return;
+          }
+        } else if (selectedType === 'study') {
+          const parsed = studySessionSchema.safeParse({
+            topicId: 'topic-1',
+            durationMinutes: parseInt(durationMinutes, 10) || 45,
+            notes: notes.trim() || title.trim(),
+            date: dateStr,
+          });
+          if (!parsed.success) {
+            const fieldErrors: Record<string, string> = {};
+            parsed.error.issues.forEach((e: any) => {
+              if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+            });
+            setErrors(fieldErrors);
+            hapticFeedback.warning();
+            return;
+          }
+        } else if (selectedType === 'event') {
+          const parsed = eventSchema.safeParse({
+            title: title.trim(),
+            date: dateStr,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            location: location.trim(),
+            type: eventType,
+            notes: notes.trim(),
+          });
+          if (!parsed.success) {
+            const fieldErrors: Record<string, string> = {};
+            parsed.error.issues.forEach((e: any) => {
+              if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+            });
+            setErrors(fieldErrors);
+            hapticFeedback.warning();
+            return;
+          }
+        }
+      } catch (validationErr: any) {
+        console.error('[QuickCreate] Validation error:', validationErr);
+        Alert.alert('Validation Error', validationErr.message || 'Please check input fields');
+        return;
+      }
 
       setIsSubmitting(true);
       try {
@@ -170,13 +296,16 @@ export const QuickCreateSheet = forwardRef<BottomSheet, QuickCreateSheetProps>(
         setTitle('');
         setNotes('');
         setLocation('');
+        setErrors({});
 
         // Close sheet
         (ref as any)?.current?.close();
 
         onSuccess?.(selectedType, `New ${selectedType} added to your plan!`);
-      } catch {
+      } catch (err: any) {
+        console.error('[QuickCreate] Firebase error:', err);
         hapticFeedback.error();
+        Alert.alert('Error Saving Item', err?.message || 'Could not save item to Firebase. Please try again.');
       } finally {
         setIsSubmitting(false);
       }
@@ -240,7 +369,11 @@ export const QuickCreateSheet = forwardRef<BottomSheet, QuickCreateSheetProps>(
             }
             placeholder="e.g. Finish Algorithms Homework"
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(t) => {
+              setTitle(t);
+              if (errors.title) setErrors((prev) => ({ ...prev, title: '' }));
+            }}
+            error={errors.title}
             required
           />
 
@@ -250,7 +383,11 @@ export const QuickCreateSheet = forwardRef<BottomSheet, QuickCreateSheetProps>(
               label="Course Code"
               placeholder="e.g. CS301"
               value={courseCode}
-              onChangeText={setCourseCode}
+              onChangeText={(c) => {
+                setCourseCode(c);
+                if (errors.courseCode) setErrors((prev) => ({ ...prev, courseCode: '' }));
+              }}
+              error={errors.courseCode}
               required
             />
           )}
@@ -298,6 +435,7 @@ export const QuickCreateSheet = forwardRef<BottomSheet, QuickCreateSheetProps>(
             mode="date"
             value={date}
             onChange={setDate}
+            error={errors.date || errors.dueDate}
           />
 
           {/* Times */}
@@ -308,6 +446,7 @@ export const QuickCreateSheet = forwardRef<BottomSheet, QuickCreateSheetProps>(
                 mode="time"
                 value={startTime}
                 onChange={setStartTime}
+                error={errors.startTime || errors.dueTime || errors.time}
               />
             </View>
 
@@ -318,6 +457,7 @@ export const QuickCreateSheet = forwardRef<BottomSheet, QuickCreateSheetProps>(
                   mode="time"
                   value={endTime}
                   onChange={setEndTime}
+                  error={errors.endTime}
                 />
               </View>
             )}
@@ -331,6 +471,7 @@ export const QuickCreateSheet = forwardRef<BottomSheet, QuickCreateSheetProps>(
               keyboardType="numeric"
               value={durationMinutes}
               onChangeText={setDurationMinutes}
+              error={errors.durationMinutes}
             />
           )}
 
@@ -341,6 +482,7 @@ export const QuickCreateSheet = forwardRef<BottomSheet, QuickCreateSheetProps>(
               placeholder="e.g. Science Complex Room 204"
               value={location}
               onChangeText={setLocation}
+              error={errors.location || errors.venue}
             />
           )}
 

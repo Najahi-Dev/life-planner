@@ -57,13 +57,17 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
       if (firebaseUser) {
         set({ user: firebaseUser, isAuthenticated: true, isLoading: false, isInitialized: true });
 
-        // Load profile and settings asynchronously
+        // Load profile, settings, and seed initial Firestore data asynchronously
         try {
           const [profile, settings] = await Promise.all([
             authService.getUserProfile(firebaseUser.uid),
             authService.getUserSettings(firebaseUser.uid),
           ]);
           set({ profile, settings });
+
+          // Auto-seed sample tasks, shifts, courses, exams, etc. if new
+          const { seedUserDataToFirestore } = await import('@/services/firebase/seedFirestore');
+          await seedUserDataToFirestore(firebaseUser.uid, firebaseUser.email || undefined, firebaseUser.displayName || undefined);
         } catch {
           // Keep offline state
         }

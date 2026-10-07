@@ -1,11 +1,11 @@
 import React, { useState, forwardRef } from 'react';
-import { StyleSheet, View, Text, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, Alert } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { GraduationCap, Plus } from 'lucide-react-native';
 import { Sheet, Button, Input, Chip } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { hapticFeedback } from '@/utils/haptics';
-import { UniCourseFormData } from '../schemas/uniSchemas';
+import { UniCourseFormData, uniCourseSchema } from '../schemas/uniSchemas';
 
 export interface AddCourseSheetProps {
   onSave: (data: UniCourseFormData) => Promise<void>;
@@ -22,12 +22,31 @@ export const AddCourseSheet = forwardRef<BottomSheet, AddCourseSheetProps>(
     const [semester, setSemester] = useState('Fall 2026');
     const [targetGrade, setTargetGrade] = useState('A');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const grades = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+'];
     const semesters = ['Fall 2026', 'Spring 2027', 'Summer 2027', 'Fall 2027'];
 
     const handleSave = async () => {
-      if (!code.trim() || !name.trim()) {
+      console.log('[Tap] AddCourse submit clicked');
+      setErrors({});
+
+      const parsed = uniCourseSchema.safeParse({
+        code: code.trim().toUpperCase(),
+        name: name.trim(),
+        lecturer: lecturer.trim(),
+        credits: Number(credits) || 3,
+        semester: semester.trim(),
+        color: theme.accent.primary,
+        targetGrade,
+      });
+
+      if (!parsed.success) {
+        const fieldErrors: Record<string, string> = {};
+        parsed.error.issues.forEach((e: any) => {
+          if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+        });
+        setErrors(fieldErrors);
         hapticFeedback.warning();
         return;
       }
@@ -52,8 +71,11 @@ export const AddCourseSheet = forwardRef<BottomSheet, AddCourseSheetProps>(
         setName('');
         setLecturer('');
         setCredits('4');
-      } catch {
+        setErrors({});
+      } catch (err: any) {
+        console.error('[AddCourse] Error creating course:', err);
         hapticFeedback.error();
+        Alert.alert('Error', err?.message || 'Failed to save course');
       } finally {
         setIsSubmitting(false);
       }
@@ -78,7 +100,11 @@ export const AddCourseSheet = forwardRef<BottomSheet, AddCourseSheetProps>(
             label="Course Code"
             placeholder="e.g. CS301"
             value={code}
-            onChangeText={setCode}
+            onChangeText={(c) => {
+              setCode(c);
+              if (errors.code) setErrors((prev) => ({ ...prev, code: '' }));
+            }}
+            error={errors.code}
             required
           />
 
@@ -86,7 +112,11 @@ export const AddCourseSheet = forwardRef<BottomSheet, AddCourseSheetProps>(
             label="Course Name"
             placeholder="e.g. Data Structures & Algorithms"
             value={name}
-            onChangeText={setName}
+            onChangeText={(n) => {
+              setName(n);
+              if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
+            }}
+            error={errors.name}
             required
           />
 
@@ -95,6 +125,7 @@ export const AddCourseSheet = forwardRef<BottomSheet, AddCourseSheetProps>(
             placeholder="e.g. Prof. Alan Turing"
             value={lecturer}
             onChangeText={setLecturer}
+            error={errors.lecturer}
           />
 
           {/* Credits Input */}
@@ -103,7 +134,11 @@ export const AddCourseSheet = forwardRef<BottomSheet, AddCourseSheetProps>(
             placeholder="4"
             keyboardType="numeric"
             value={credits}
-            onChangeText={setCredits}
+            onChangeText={(cr) => {
+              setCredits(cr);
+              if (errors.credits) setErrors((prev) => ({ ...prev, credits: '' }));
+            }}
+            error={errors.credits}
             required
           />
 

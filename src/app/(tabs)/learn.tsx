@@ -41,21 +41,33 @@ export default function LearnTabScreen() {
   const addTopicSheetRef = useRef<BottomSheet>(null);
 
   const handleOpenLogSession = () => {
+    console.log('[Tap] Learn screen handleOpenLogSession clicked');
     hapticFeedback.selection();
     logSessionSheetRef.current?.expand();
   };
 
   const handleOpenAddTopic = () => {
+    console.log('[Tap] Learn screen handleOpenAddTopic clicked');
     hapticFeedback.selection();
     addTopicSheetRef.current?.expand();
   };
 
   const handleReviewTopic = async (topicId: string) => {
-    await reviewTopic(topicId);
+    console.log('[Tap] Learn screen handleReviewTopic:', topicId);
+    try {
+      await reviewTopic(topicId);
+    } catch (err: any) {
+      console.error('[Learn] Error reviewing topic:', err);
+    }
   };
 
   const handleDeleteTopic = async (topicId: string) => {
-    await deleteTopic(topicId);
+    console.log('[Tap] Learn screen handleDeleteTopic:', topicId);
+    try {
+      await deleteTopic(topicId);
+    } catch (err: any) {
+      console.error('[Learn] Error deleting topic:', err);
+    }
   };
 
   return (
@@ -138,12 +150,17 @@ export default function LearnTabScreen() {
             <Pressable
               onPress={handleOpenAddTopic}
               hitSlop={8}
-              style={({ pressed }) => [styles.addButton, pressed && { opacity: 0.7 }]}
+              accessibilityLabel="Add Topic"
+              style={({ pressed }) => [
+                styles.addButton,
+                {
+                  backgroundColor: theme.accent.primarySoft,
+                  borderRadius: theme.radius.button,
+                },
+                pressed && { opacity: 0.7 },
+              ]}
             >
-              <Plus size={16} color={theme.accent.primary} style={{ marginRight: 4 }} />
-              <Text style={[theme.typography.captionBold, { color: theme.accent.primary }]}>
-                New Topic
-              </Text>
+              <Plus size={18} color={theme.accent.primary} />
             </Pressable>
           </View>
 
@@ -226,7 +243,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addButton: {
-    flexDirection: 'row',
+    width: 32,
+    height: 32,
     alignItems: 'center',
+    justifyContent: 'center',
   },
 });

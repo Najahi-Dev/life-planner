@@ -13,16 +13,15 @@ export const GreetingHeader: React.FC = () => {
   const { user, profile } = useAuth();
   const { unreadCount } = useNotifications();
 
-  const getGreetingData = () => {
+  const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return { text: 'Good morning', emoji: '☀️' };
-    if (hour < 18) return { text: 'Good afternoon', emoji: '🌤️' };
-    return { text: 'Good evening', emoji: '🌙' };
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   };
 
   const displayName = profile?.displayName || user?.displayName || 'Najahi';
   const formattedDate = format(new Date(), 'EEEE, MMMM d');
-  const greeting = getGreetingData();
 
   return (
     <View style={styles.container}>
@@ -52,6 +51,7 @@ export const GreetingHeader: React.FC = () => {
         <View style={styles.actionRow}>
           <Pressable
             onPress={() => {
+              console.log('[Tap] GreetingHeader Events calendar clicked');
               hapticFeedback.light();
               router.push('/events' as any);
             }}
@@ -73,6 +73,7 @@ export const GreetingHeader: React.FC = () => {
 
           <Pressable
             onPress={() => {
+              console.log('[Tap] GreetingHeader Notifications clicked');
               hapticFeedback.light();
               router.push('/notifications' as any);
             }}
@@ -93,6 +94,7 @@ export const GreetingHeader: React.FC = () => {
             <Bell size={18} color={theme.colors.text} />
             {unreadCount > 0 && (
               <View
+                pointerEvents="none"
                 style={[
                   styles.unreadBadge,
                   {
@@ -106,6 +108,7 @@ export const GreetingHeader: React.FC = () => {
 
           <Pressable
             onPress={() => {
+              console.log('[Tap] GreetingHeader Settings clicked');
               hapticFeedback.light();
               router.push('/settings' as any);
             }}
@@ -139,8 +142,8 @@ export const GreetingHeader: React.FC = () => {
           numberOfLines={2}
           adjustsFontSizeToFit
         >
-          {greeting.text},{' '}
-          <Text style={{ color: theme.accent.primary }}>{displayName}</Text> {greeting.emoji}
+          {getGreeting()},{' '}
+          <Text style={{ color: theme.accent.primary }}>{displayName}</Text>
         </Text>
         <Text
           style={[

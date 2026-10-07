@@ -1,12 +1,12 @@
 import React, { useState, forwardRef } from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import { StyleSheet, View, Text, Pressable, Alert } from 'react-native';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { GraduationCap, Plus, Trash2 } from 'lucide-react-native';
 import { Sheet, Button, Input, Select, DateTimeField, Chip, SelectOption } from '@/components/ui';
 import { useTheme } from '@/hooks/useTheme';
 import { UniCourse } from '@/types';
 import { hapticFeedback } from '@/utils/haptics';
-import { UniExamFormData } from '../schemas/uniSchemas';
+import { UniExamFormData, uniExamSchema } from '../schemas/uniSchemas';
 import { format } from 'date-fns';
 
 export interface AddExamSheetProps {
@@ -28,6 +28,7 @@ export const AddExamSheet = forwardRef<BottomSheet, AddExamSheetProps>(
     const [topicsList, setTopicsList] = useState<string[]>([]);
     const [notes, setNotes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const weights = [20, 25, 30, 35, 40, 50];
 
@@ -44,12 +45,33 @@ export const AddExamSheet = forwardRef<BottomSheet, AddExamSheetProps>(
     };
 
     const handleSave = async () => {
-      if (!title.trim()) {
+      console.log('[Tap] AddExam submit clicked');
+      setErrors({});
+
+      const activeCourse = courses.find((c) => c.id === selectedCourseId) || courses[0];
+      const examDateStr = format(examDate, 'yyyy-MM-dd');
+
+      const parsed = uniExamSchema.safeParse({
+        courseId: activeCourse?.id || 'c1',
+        courseCode: activeCourse?.code || 'CS301',
+        title: title.trim(),
+        date: examDateStr,
+        time: timeText.trim() || '09:00 - 11:00',
+        venue: venue.trim() || 'Main Campus',
+        weightPercent: Number(weightPercent) || 30,
+        topicsToCover: topicsList,
+        notes: notes.trim(),
+      });
+
+      if (!parsed.success) {
+        const fieldErrors: Record<string, string> = {};
+        parsed.error.issues.forEach((e: any) => {
+          if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+        });
+        setErrors(fieldErrors);
         hapticFeedback.warning();
         return;
       }
-
-      const activeCourse = courses.find((c) => c.id === selectedCourseId) || courses[0];
 
       setIsSubmitting(true);
       try {
@@ -57,7 +79,7 @@ export const AddExamSheet = forwardRef<BottomSheet, AddExamSheetProps>(
           courseId: activeCourse?.id || 'c1',
           courseCode: activeCourse?.code || 'CS301',
           title: title.trim(),
-          date: format(examDate, 'yyyy-MM-dd'),
+          date: examDateStr,
           time: timeText.trim() || '09:00 - 11:00',
           venue: venue.trim() || 'Main Campus',
           weightPercent: Number(weightPercent) || 30,
@@ -73,8 +95,11 @@ export const AddExamSheet = forwardRef<BottomSheet, AddExamSheetProps>(
         setVenue('');
         setTopicsList([]);
         setNotes('');
-      } catch {
+        setErrors({});
+      } catch (err: any) {
+        console.error('[AddExam] Error creating exam:', err);
         hapticFeedback.error();
+        Alert.alert('Error', err?.message || 'Failed to save exam');
       } finally {
         setIsSubmitting(false);
       }
@@ -115,12 +140,22 @@ export const AddExamSheet = forwardRef<BottomSheet, AddExamSheetProps>(
             label="Exam Title"
             placeholder="e.g. Midterm: Algorithms & Complexity"
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(t) => {
+              setTitle(t);
+              if (errors.title) setErrors((prev) => ({ ...prev, title: '' }));
+            }}
+            error={errors.title}
             required
           />
 
           {/* Date & Time */}
-          <DateTimeField label="Exam Date" mode="date" value={examDate} onChange={setExamDate} />
+          <DateTimeField
+            label="Exam Date"
+            mode="date"
+            value={examDate}
+            onChange={setExamDate}
+            error={errors.date}
+          />
 
           <Input
             label="Exam Time Window"

@@ -53,6 +53,7 @@ export default function EventsScreen() {
   const addEventSheetRef = useRef<BottomSheet>(null);
 
   const handleOpenAdd = () => {
+    console.log('[Tap] Events screen handleOpenAdd clicked');
     hapticFeedback.selection();
     addEventSheetRef.current?.expand();
   };
@@ -184,7 +185,7 @@ export default function EventsScreen() {
                 ) : (
                   <EmptyState
                     title="No events on this day"
-                    description="Tap '+ New' to schedule an activity or meeting on this date."
+                    description="Tap '+' to schedule an activity or meeting on this date."
                     icon={<Calendar size={36} color={theme.accent.primary} />}
                     actionTitle="Add Event"
                     onAction={handleOpenAdd}
