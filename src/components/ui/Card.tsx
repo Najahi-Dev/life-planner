@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  StyleSheet,
-  View,
-  Pressable,
-  ViewStyle,
-} from 'react-native';
+import { StyleSheet, View, Pressable, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,8 +19,6 @@ export interface CardProps {
   contentStyle?: ViewStyle;
   disabled?: boolean;
 }
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const Card: React.FC<CardProps> = ({
   children,
@@ -94,15 +87,17 @@ export const Card: React.FC<CardProps> = ({
 
   if (isPressable) {
     return (
-      <AnimatedPressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        disabled={disabled}
-        style={[styles.base, cardStyle, style, animatedStyle]}
-      >
-        <View style={contentStyle}>{children}</View>
-      </AnimatedPressable>
+      <Animated.View style={[{ width: '100%' }, animatedStyle]}>
+        <Pressable
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          disabled={disabled}
+          style={[styles.base, cardStyle, style]}
+        >
+          <View style={contentStyle}>{children}</View>
+        </Pressable>
+      </Animated.View>
     );
   }
 

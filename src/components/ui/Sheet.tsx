@@ -1,4 +1,4 @@
-import React, { forwardRef, useCallback } from 'react';
+import React, { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import BottomSheet, {
   BottomSheetBackdrop,
@@ -21,12 +21,58 @@ export const Sheet = forwardRef<BottomSheet, SheetProps>(
       children,
       snapPoints = ['50%', '85%'],
       onClose,
+      onChange,
       enablePanDownToClose = true,
       ...props
     },
     ref,
   ) => {
     const theme = useTheme();
+    const internalRef = useRef<BottomSheet>(null);
+    const [isOpen, setIsOpen] = useState(false);
+
+    useImperativeHandle(ref, () => ({
+      snapToIndex: (index: number, animationConfigs?: any) => {
+        if (index >= 0) setIsOpen(true);
+        else setIsOpen(false);
+        internalRef.current?.snapToIndex(index, animationConfigs);
+      },
+      snapToPosition: (position: string | number, animationConfigs?: any) => {
+        setIsOpen(true);
+        internalRef.current?.snapToPosition(position, animationConfigs);
+      },
+      expand: (animationConfigs?: any) => {
+        setIsOpen(true);
+        internalRef.current?.expand(animationConfigs);
+      },
+      collapse: (animationConfigs?: any) => {
+        bottomSheetCollapse(animationConfigs);
+      },
+      close: (animationConfigs?: any) => {
+        setIsOpen(false);
+        internalRef.current?.close(animationConfigs);
+      },
+      forceClose: (animationConfigs?: any) => {
+        setIsOpen(false);
+        internalRef.current?.forceClose(animationConfigs);
+      },
+    } as BottomSheet));
+
+    const bottomSheetCollapse = (animationConfigs?: any) => {
+      internalRef.current?.collapse(animationConfigs);
+    };
+
+    const handleChange = useCallback(
+      (index: number, position: number, type: any) => {
+        const open = index >= 0;
+        setIsOpen(open);
+        onChange?.(index, position, type);
+        if (index === -1) {
+          onClose?.();
+        }
+      },
+      [onChange, onClose],
+    );
 
     const renderBackdrop = useCallback(
       (backdropProps: BottomSheetBackdropProps) => (
@@ -36,19 +82,27 @@ export const Sheet = forwardRef<BottomSheet, SheetProps>(
           disappearsOnIndex={-1}
           opacity={0.6}
           pressBehavior="close"
+          style={[
+            backdropProps.style,
+            { pointerEvents: isOpen ? 'auto' : 'none' },
+          ]}
         />
       ),
-      [],
+      [isOpen],
     );
 
     return (
       <BottomSheet
-        ref={ref}
+        ref={internalRef}
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose={enablePanDownToClose}
         onClose={onClose}
+        onChange={handleChange}
         backdropComponent={renderBackdrop}
+        containerStyle={{
+          pointerEvents: isOpen ? 'auto' : 'none',
+        }}
         backgroundStyle={{
           backgroundColor: theme.colors.sheetBackground,
           borderTopLeftRadius: theme.radius.sheet,
@@ -62,7 +116,9 @@ export const Sheet = forwardRef<BottomSheet, SheetProps>(
         }}
         {...props}
       >
-        <BottomSheetView style={[styles.content, { paddingHorizontal: theme.spacing.screenPadding }]}>
+        <BottomSheetView
+          style={[styles.content, { paddingHorizontal: theme.spacing.screenPadding }]}
+        >
           {children}
         </BottomSheetView>
       </BottomSheet>

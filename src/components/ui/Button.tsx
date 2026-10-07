@@ -6,6 +6,7 @@ import {
   ViewStyle,
   TextStyle,
   Pressable,
+  View,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -33,8 +34,6 @@ export interface ButtonProps {
   fullWidth?: boolean;
   haptic?: boolean;
 }
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const Button: React.FC<ButtonProps> = ({
   title,
@@ -143,51 +142,59 @@ export const Button: React.FC<ButtonProps> = ({
   const textColor = getTextColor();
 
   return (
-    <AnimatedPressable
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      disabled={disabled || loading}
+    <Animated.View
       style={[
-        styles.base,
         {
-          height: getHeight(),
-          paddingHorizontal: getPaddingHorizontal(),
-          borderRadius: theme.radius.button,
-          backgroundColor: getBackgroundColor(),
-          borderColor: getBorderColor(),
-          borderWidth: variant === 'outline' ? 1.5 : 0,
           width: size === 'icon' ? theme.sizes.minTouchTarget : fullWidth ? '100%' : 'auto',
           minWidth: size === 'icon' ? theme.sizes.minTouchTarget : undefined,
-          opacity: disabled ? 0.6 : 1,
         },
-        variant === 'primary' && !disabled ? theme.shadows.sm : undefined,
-        style,
         animatedStyle,
       ]}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={textColor} />
-      ) : (
-        <>
-          {leftIcon && <Animated.View style={styles.iconLeft}>{leftIcon}</Animated.View>}
-          {title ? (
-            <Text
-              style={[
-                styles.text,
-                size === 'sm' ? theme.typography.captionBold : theme.typography.bodyBold,
-                { color: textColor },
-                textStyle,
-              ]}
-              numberOfLines={1}
-            >
-              {title}
-            </Text>
-          ) : null}
-          {rightIcon && <Animated.View style={styles.iconRight}>{rightIcon}</Animated.View>}
-        </>
-      )}
-    </AnimatedPressable>
+      <Pressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={disabled || loading}
+        style={[
+          styles.base,
+          {
+            height: getHeight(),
+            paddingHorizontal: getPaddingHorizontal(),
+            borderRadius: theme.radius.button,
+            backgroundColor: getBackgroundColor(),
+            borderColor: getBorderColor(),
+            borderWidth: variant === 'outline' ? 1.5 : 0,
+            width: '100%',
+            opacity: disabled ? 0.6 : 1,
+          },
+          variant === 'primary' && !disabled ? theme.shadows.sm : undefined,
+          style,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color={textColor} />
+        ) : (
+          <>
+            {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
+            {title ? (
+              <Text
+                style={[
+                  styles.text,
+                  size === 'sm' ? theme.typography.captionBold : theme.typography.bodyBold,
+                  { color: textColor },
+                  textStyle,
+                ]}
+                numberOfLines={1}
+              >
+                {title}
+              </Text>
+            ) : null}
+            {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
+          </>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 };
 
